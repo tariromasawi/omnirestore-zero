@@ -1,0 +1,5 @@
+node_modules/
+.env
+vault/staging/
+keys/*private*
+!keys/ed25519_public.pem
