@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>OmniRestore Zero-Cost — MATRIX Vault</title>
+<style>
+:root{--bg:#03060c;--ink:#dff7ff;--cyan:#5ce1ff;--gold:#d4b36a;--muted:#7ea0ad;--card:#071018;--line:#16303a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#0b2a36 0%,var(--bg) 55%);color:var(--ink);font-family:system-ui,sans-serif}
+header,main,footer{max-width:1100px;margin:0 auto;padding:1.1rem}
+.kicker{color:var(--gold);letter-spacing:.18em;text-transform:uppercase;font-size:.72rem}
+.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:1rem}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--line);padding:1rem}
+#viz{height:280px;border:1px solid var(--line)}
+button{background:var(--cyan);color:#012;border:0;padding:.55rem .8rem;margin:.2rem .25rem 0 0;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--cyan);border:1px solid var(--cyan)}
+input,select,textarea{width:100%;background:#031018;color:var(--ink);border:1px solid var(--line);padding:.5rem;margin:.3rem 0}
+pre{background:#02080d;border:1px solid var(--line);padding:.7rem;min-height:120px;overflow:auto;white-space:pre-wrap}
+.item{border-bottom:1px solid var(--line);padding:.4rem 0}
+.badge{display:inline-block;border:1px solid var(--gold);color:var(--gold);font-size:.7rem;padding:0 .3rem;margin-right:.3rem}
+a{color:var(--cyan)}footer{color:var(--muted);text-align:center;padding-bottom:3rem}
+</style></head>
+<body>
+<header>
+<p class="kicker">77-99-33 · 777-999-333 · Mwari ndi Mwari</p>
+<h1>OMNIRESTORE ZERO-COST</h1>
+<p>MATRIX Vault · Discovery · Record Sphere · Legal drafts</p>
+<p id="status">Booting…</p>
+</header>
+<main>
+<div class="grid">
+<section><h2>Record Sphere</h2><div id="viz">Loading Three.js…</div>
+<button id="scan">Begin restoration scan</button>
+<button id="pdf" class="ghost">Export PDF report</button>
+<p style="color:var(--muted);font-size:.85rem">Public GitHub only. Existing pages untouched. Paid clouds off.</p></section>
+<section><h2>Catalog</h2><div id="list">Scan to load live repos.</div></section>
+</div>
+<section><h2>Console</h2><pre id="log"></pre></section>
+<section><h2>Legal draft desk</h2>
+<input id="legalUrl" placeholder="https://example.com/page"/>
+<input id="legalName" value="SAINT Tariro Masawi THE ANOINTED COMMANDER"/>
+<select id="legalType"><option value="gdpr">GDPR draft</option><option value="dmca">DMCA draft</option><option value="defamation">Privacy draft</option></select>
+<button id="draft">Generate draft</button>
+<textarea id="legalOut" rows="8" readonly></textarea>
+</section>
+</main>
+<footer>House of Masawi · © SAINT Tariro Masawi THE ANOINTED COMMANDER · tariro@masawi.org</footer>
+<script src="https://unpkg.com/three@0.165.0/build/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const logEl=document.getElementById("log"); const listEl=document.getElementById("list"); const statusEl=document.getElementById("status");
+const log=m=>{logEl.textContent+=m+"\n";};
+let catalog={items:[]};
+const viz=document.getElementById("viz");
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,Math.max(viz.clientWidth,1)/Math.max(viz.clientHeight,1),0.1,100);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setSize(viz.clientWidth,viz.clientHeight); viz.innerHTML=""; viz.appendChild(renderer.domElement);
+const group=new THREE.Group(); scene.add(group);
+group.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1.15,1), new THREE.MeshNormalMaterial({wireframe:true})));
+camera.position.z=5; const nodes=[];
+function layout(n){ nodes.forEach(m=>group.remove(m)); nodes.length=0; for(let i=0;i<n;i++){ const mesh=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8), new THREE.MeshBasicMaterial({color:0x5ce1ff})); const phi=Math.acos(1-2*(i+0.5)/n); const theta=Math.PI*(1+Math.sqrt(5))*i; const r=2.05; mesh.position.set(r*Math.sin(phi)*Math.cos(theta), r*Math.sin(phi)*Math.sin(theta), r*Math.cos(phi)); group.add(mesh); nodes.push(mesh);} }
+(function animate(){ requestAnimationFrame(animate); group.rotation.y+=0.003; renderer.render(scene,camera);} )();
+async function loadBundled(){ try{ const res=await fetch("./vault/catalog.json"); if(res.ok){ catalog=await res.json(); renderList(); layout(Math.max(catalog.items.length,8)); statusEl.textContent="Bundled catalog · "+catalog.items.length; log("Loaded vault/catalog.json"); } }catch(e){ log(String(e)); } }
+async function scan(){ statusEl.textContent="Scanning public GitHub…"; log("GET /users/tariromasawi/repos"); const res=await fetch("https://api.github.com/users/tariromasawi/repos?per_page=100&type=owner"); if(!res.ok){ log("API "+res.status); return loadBundled(); } const repos=await res.json(); catalog={items:repos.map(r=>({platform:"github",name:r.name,url:r.html_url,language:r.language,description:r.description,status:"DISCOVERED"}))}; renderList(); layout(Math.max(catalog.items.length,8)); statusEl.textContent="Scan complete · "+catalog.items.length; log("Found "+catalog.items.length+" public works. Sanctuaries untouched."); }
+function renderList(){ listEl.innerHTML=catalog.items.map(it=>`<div class="item"><span class="badge">${it.status||"DISCOVERED"}</span><a href="${it.url}" target="_blank" rel="noopener">${it.name}</a></div>`).join("")||"Empty."; }
+document.getElementById("scan").onclick=()=>scan().catch(e=>log(String(e)));
+document.getElementById("pdf").onclick=()=>{ const {jsPDF}=window.jspdf; const doc=new jsPDF(); doc.text("OmniRestore Zero-Cost Report",10,12); doc.text("SAINT Tariro Masawi THE ANOINTED COMMANDER",10,20); doc.text(catalog.items.map(i=>i.name).slice(0,40).join("\n"),10,32); doc.save("omnirestore_report.pdf"); log("PDF exported"); };
+const drafts={ gdpr:(u,n)=>`Subject: GDPR Article 17\n\nPlease review personal data at ${u}. Draft only.\n${n}`, dmca:(u,n)=>`Subject: DMCA\n\nPlease review ${u}. Draft only.\n${n}`, defamation:(u,n)=>`Subject: Privacy notice\n\nPlease review ${u} concerning ${n}. Draft only.` };
+document.getElementById("draft").onclick=()=>{ const u=document.getElementById("legalUrl").value||"[URL]"; const n=document.getElementById("legalName").value; document.getElementById("legalOut").value=drafts[document.getElementById("legalType").value](u,n); };
+loadBundled();
+</script></body></html>
